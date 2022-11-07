@@ -60,8 +60,8 @@ all: main-build
 main-build: canInterface.elf secondary-outputs
 
 # Tool invocations
-canInterface.elf canInterface.map: $(OBJS) $(USER_OBJS) E:\STM32CubeIDE\workspace_1.9.0\canInterface\STM32G474CETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "canInterface.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\STM32CubeIDE\workspace_1.9.0\canInterface\STM32G474CETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="canInterface.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+canInterface.elf canInterface.map: $(OBJS) $(USER_OBJS) E:\CanInterface\STM32G474CETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "canInterface.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\CanInterface\STM32G474CETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="canInterface.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
