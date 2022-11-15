@@ -55,6 +55,7 @@ FDCAN_RxHeaderTypeDef RxHeader;
 uint8_t txData[8];
 uint8_t rxData[8];
 uint8_t trigger1msFlag=0;
+uint8_t trigger2msFlag=0;
 uint8_t spiAsk[]={0x05,0x00,0x00,0x00,0x00};
 uint8_t spi1Rec[5];
 uint8_t spi2Rec[5];
@@ -159,83 +160,11 @@ void unpack_reply(FDCAN_RxHeaderTypeDef *pRxHeader, uint8_t *data)
 	}
 
 }
-/*void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
-{
-	if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
-	{
-	HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &RxHeader, rxData);
-	int i;
-	if (RxHeader.Identifier==0x145)
-		{
-		int i;
-		for (i=0;i<8;i++)
-			txData[i]=spiTxDataBuff[i];
-		}
-	else if (RxHeader.Identifier==0x146)
-	{
-		if (rxData[0]==1)
-			torEnFlag=1;
-		else
-			torEnFlag=0;
-
-		for (i=0;i<8;i++)
-			txData[i]=0;
-
-		uint8_t returnMsg[13];
-		returnMsg[0]=0xff;
-		returnMsg[1]=0xff;
-		returnMsg[2]=0xfd;
-		returnMsg[3]=0; // reserved
-		returnMsg[4]=1; // device ID
-		returnMsg[5]=6; // low byte of length
-		returnMsg[6]=0; // high byte of length
-		returnMsg[7]=3; // instruction code
-		returnMsg[8]=68; // Low byte reg address
-		returnMsg[9]=0x00; // high byte reg address
-		returnMsg[10]=1; // para bytes
-		returnMsg[11]=0xde; //low byte of CRC
-		returnMsg[12]=0; // high byte of CRC
-		unsigned short crc16;
-		crc16=update_crc(0, returnMsg, 11);
-		returnMsg[11]= crc16 & 0x00ff;
-		returnMsg[12] = (crc16>>8) & 0x00ff;
-
-		if (rxData[0]==2)
-		{
-			HAL_UART_DMAStop(&huart1);
-			HAL_UART_Transmit(&huart1,returnMsg,13,2); // disable response data for write cmd
-			MX_DMA_Init();
-			for (i=0;i<15;i++)
-				dmaBuff[i]=0;
-			for (i=0;i<30;i++)
-				FBposBuff[i]=0;
-			HAL_UART_Receive_DMA(&huart1, dmaBuff, 15);
-		}
-
-		desPos[0]=rxData[2]; // little-endian
-		desPos[1]=rxData[3];
-		desPos[2]=rxData[4];
-		desPos[3]=rxData[5];
-
-		for (i=0;i<16;i++)
-			{if (FBposBuff[i]==0xff && FBposBuff[i+1]==0xff && FBposBuff[i+2]==0xfd)
-				break;
-			}
-			txData[0]=FBposBuff[i+9];
-			txData[1]=FBposBuff[i+10];
-			txData[2]=FBposBuff[i+11];
-			txData[3]=FBposBuff[i+12];
-	}
-	TxHeader.Identifier=RxHeader.Identifier;
-	HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, txData);
-	//HAL_FDCAN_ActivateNotification(&hfdcan1,FDCAN_IT_RX_FIFO0_NEW_MESSAGE,0);
-	}
-}*/
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim==&htim2)
-		trigger1msFlag=1;
+		{trigger1msFlag=1;trigger2msFlag++;}
 }
 void delay_us(uint16_t nus)
 {
@@ -480,8 +409,10 @@ int main(void)
 		for (i=0;i<8;i++)
 			spiTxDataBuff[i+8]=spiTxData[i];
 
-
-
+		trigger1msFlag=0;
+	  }
+	if (trigger2msFlag==2)
+	{
 		if (torEnFlag!=torEnFlagOld)
 		{
 			if (torEnFlag==1)
@@ -505,9 +436,9 @@ int main(void)
 		}
 
 		HAL_UART_Transmit(&huart1,getCurPos,14,2);
-		trigger1msFlag=0;
-	  }
-	  if (HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) >= 1)
+		trigger2msFlag=0;
+	}
+	if (HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0) >= 1)
 	  {
 		  if (HAL_FDCAN_GetRxMessage(&hfdcan1, FDCAN_RX_FIFO0, &RxHeader, rxData) == HAL_OK)
 	  	  {
